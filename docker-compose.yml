@@ -1,0 +1,86 @@
+x-environment: &environment
+  env_file:
+    - path: ./.env.example
+      required: true
+    - path: ./.env
+      required: false
+
+services:
+  app:
+    <<: *environment
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/var/www/html
+      - ./docker/php/php.ini:/usr/local/etc/php/php.ini
+    working_dir: /var/www/html
+    networks:
+      - app-network
+
+  caddy:
+    <<: *environment
+    image: caddy:latest
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - app
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+      - caddy-config:/config
+      - .:/var/www/html
+    networks:
+      - app-network
+
+  postgres:
+    <<: *environment
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_DB=${DB_DATABASE:-database}
+      - POSTGRES_USER=${DB_USERNAME:-user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-password}
+    depends_on:
+      - app
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  redis:
+    <<: *environment
+    image: redis:alpine
+    restart: always
+    depends_on:
+      - app
+    networks:
+      - app-network
+
+  mailhog:
+    <<: *environment
+    image: mailhog/mailhog:latest
+    restart: always
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    depends_on:
+      - app
+    networks:
+      - app-network
+
+volumes:
+  postgres-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  app-network:
+    driver: bridge

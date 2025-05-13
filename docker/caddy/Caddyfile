@@ -1,0 +1,50 @@
+:80 {
+	root * /var/www/html/public
+
+	# Setting security headers and encoding
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		Referrer-Policy "no-referrer-when-downgrade"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		Cache-Control "public, max-age=604800"
+	}
+
+	# Enable gzip compression for faster data transfer
+	encode gzip
+
+	# Logging with improved format
+	log {
+	    output file /var/log/caddy/access.log
+	}
+
+	# Handling favicon.ico
+	route /favicon.ico {
+		file_server
+	}
+
+	# Handling robots.txt
+	route /robots.txt {
+		file_server
+	}
+
+	# Processing PHP files with connection pooling for better performance
+	php_fastcgi app:9000
+
+	# Redirect to index.php if the file is not found
+	@missingFiles {
+		not file
+		not path /favicon.ico /robots.txt
+	}
+	rewrite @missingFiles /index.php
+
+	# Serving static files with caching headers for performance boost
+	@staticFiles {
+		path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2
+	}
+	header @staticFiles Cache-Control "public, max-age=604800"
+
+	# Serving static files
+	file_server
+}

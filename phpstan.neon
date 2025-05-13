@@ -1,0 +1,11 @@
+parameters:
+  level: 9
+  fileExtensions:
+    - php
+  paths:
+    - app/
+  tmpDir: storage/framework/cache/phpstan
+  reportUnmatchedIgnoredErrors: true
+includes:
+  - phar://phpstan.phar/conf/bleedingEdge.neon
+  - vendor/phpstan/phpstan-strict-rules/rules.neon
